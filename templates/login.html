@@ -1,0 +1,32 @@
+{% extends "base.html" %}
+{% block title %}Login{% endblock %}
+{% block nav %}{% endblock %}
+{% block body_class %}login-page{% endblock %}
+{% block content %}
+<div class="row justify-content-center">
+  <div class="col-md-6 col-lg-4">
+    <div class="text-center text-white mb-4">
+      <div class="login-icon">&#127891;</div>
+      <h1 class="h3 fw-semibold mt-2">Student Attendance System</h1>
+      <p class="mb-0 opacity-75">Administrator sign in</p>
+    </div>
+    <div class="card shadow-lg border-0">
+      <div class="card-body p-4">
+        <form method="post" action="{{ url_for('main.login') }}" novalidate>
+          <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+          <div class="mb-3">
+            <label for="username" class="form-label">Username</label>
+            <input type="text" class="form-control" id="username" name="username" autocomplete="username" required autofocus>
+          </div>
+          <div class="mb-3">
+            <label for="password" class="form-label">Password</label>
+            <input type="password" class="form-control" id="password" name="password" autocomplete="current-password" required>
+          </div>
+          <button type="submit" class="btn btn-primary w-100">Log in</button>
+        </form>
+      </div>
+    </div>
+    <p class="text-center text-white-50 small mt-3">Demo account: <strong class="text-white">admin</strong> / <strong class="text-white">Admin@123</strong></p>
+  </div>
+</div>
+{% endblock %}

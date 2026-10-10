@@ -1,0 +1,103 @@
+{% extends "base.html" %}
+{% block title %}Dashboard{% endblock %}
+{% block content %}
+<div class="d-flex flex-wrap justify-content-between align-items-center mb-3">
+  <div>
+    <h1 class="h3 mb-0">Dashboard</h1>
+    <p class="text-muted mb-0">
+      {% if stat_date %}
+        {% if is_today %}Today's attendance ({{ stat_date }}){% else %}Latest attendance date: {{ stat_date }}{% endif %}
+      {% else %}No attendance has been recorded yet.{% endif %}
+    </p>
+  </div>
+  <a class="btn btn-primary" href="{{ url_for('main.attendance') }}">Mark attendance</a>
+</div>
+
+<div class="row g-3 mb-4">
+  <div class="col-6 col-lg-3">
+    <div class="card stat-card h-100"><div class="card-body">
+      <div class="stat-label">Total students</div>
+      <div class="stat-value">{{ total_students }}</div>
+      <div class="stat-note">{{ total_classes }} class(es), {{ total_subjects }} subject(s)</div>
+    </div></div>
+  </div>
+  <div class="col-6 col-lg-3">
+    <div class="card stat-card h-100 border-success-accent"><div class="card-body">
+      <div class="stat-label">Present students</div>
+      <div class="stat-value text-success">{{ present_students }}</div>
+      <div class="stat-note">Present or late in at least one session</div>
+    </div></div>
+  </div>
+  <div class="col-6 col-lg-3">
+    <div class="card stat-card h-100 border-danger-accent"><div class="card-body">
+      <div class="stat-label">Absent students</div>
+      <div class="stat-value text-danger">{{ absent_students }}</div>
+      <div class="stat-note">Absent in every marked session</div>
+    </div></div>
+  </div>
+  <div class="col-6 col-lg-3">
+    <div class="card stat-card h-100"><div class="card-body">
+      <div class="stat-label">Overall attendance</div>
+      <div class="stat-value text-{{ overall_pct|pct_class }}">{{ "%.1f"|format(overall_pct) }}%</div>
+      <div class="stat-note">{{ totals.total }} records (present + late)</div>
+    </div></div>
+  </div>
+</div>
+
+<div class="row g-3">
+  <div class="col-lg-6">
+    <div class="card h-100"><div class="card-header fw-semibold">Attendance by subject</div>
+      <div class="card-body">
+        {% if subject_stats %}
+          {% for s in subject_stats %}
+          <div class="mb-3">
+            <div class="d-flex justify-content-between small"><span>{{ s.name }}</span><span>{{ "%.1f"|format(s.percentage) }}% <span class="text-muted">({{ s.total }})</span></span></div>
+            <div class="progress" role="progressbar" aria-label="{{ s.name }}" aria-valuenow="{{ s.percentage }}" aria-valuemin="0" aria-valuemax="100">
+              <div class="progress-bar bg-{{ s.percentage|pct_class }}" style="width: {{ s.percentage }}%"></div>
+            </div>
+          </div>
+          {% endfor %}
+        {% else %}
+          <p class="text-muted mb-0">No subjects yet. Add some on the Subjects &amp; Classes page.</p>
+        {% endif %}
+      </div>
+    </div>
+  </div>
+  <div class="col-lg-6">
+    <div class="card h-100"><div class="card-header fw-semibold">Recent days</div>
+      <div class="card-body">
+        {% if trend %}
+          <div class="trend">
+            {% for t in trend %}
+            <div class="trend-col" title="{{ t.day }}: {{ '%.1f'|format(t.percentage) }}%">
+              <div class="trend-bar-wrap"><div class="trend-bar bg-{{ t.percentage|pct_class }}" style="height: {{ t.percentage }}%"></div></div>
+              <div class="trend-pct">{{ "%.0f"|format(t.percentage) }}%</div>
+              <div class="trend-day">{{ t.day[5:] }}</div>
+            </div>
+            {% endfor %}
+          </div>
+        {% else %}
+          <p class="text-muted mb-0">No attendance data yet.</p>
+        {% endif %}
+      </div>
+    </div>
+  </div>
+  <div class="col-12">
+    <div class="card"><div class="card-header fw-semibold">Students below {{ "%.0f"|format(low_threshold) }}% attendance</div>
+      <div class="table-responsive">
+        <table class="table table-hover align-middle mb-0">
+          <thead><tr><th>Roll No</th><th>Student</th><th class="text-end">Records</th><th class="text-end">Attendance</th></tr></thead>
+          <tbody>
+          {% for s in low_students %}
+            <tr><td>{{ s.roll_no }}</td><td>{{ s.name }}</td><td class="text-end">{{ s.total }}</td>
+                <td class="text-end"><span class="badge text-bg-{{ s.percentage|pct_class }}">{{ "%.1f"|format(s.percentage) }}%</span></td></tr>
+          {% else %}
+            <tr><td colspan="4" class="text-center text-muted py-4">No students are below the threshold.</td></tr>
+          {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

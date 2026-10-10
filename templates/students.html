@@ -1,0 +1,100 @@
+{% extends "base.html" %}
+{% block title %}Students{% endblock %}
+{% block content %}
+<div class="d-flex flex-wrap justify-content-between align-items-center mb-3 gap-2">
+  <h1 class="h3 mb-0">Students</h1>
+  {% if classes %}
+  <button class="btn btn-primary" type="button" data-bs-toggle="modal" data-bs-target="#addStudentModal">+ Add student</button>
+  {% endif %}
+</div>
+
+{% if not classes %}
+<div class="alert alert-warning">You need at least one class before adding students.
+  <a href="{{ url_for('main.subjects') }}" class="alert-link">Create a class</a>.</div>
+{% endif %}
+
+<form method="get" action="{{ url_for('main.students') }}" class="row g-2 mb-3">
+  <div class="col-md-6">
+    <input type="search" class="form-control" name="q" value="{{ q }}" placeholder="Search by name, roll number or email" aria-label="Search students">
+  </div>
+  <div class="col-md-3">
+    <select class="form-select" name="class_id" aria-label="Filter by class">
+      <option value="">All classes</option>
+      {% for c in classes %}<option value="{{ c.id }}" {% if class_id == c.id %}selected{% endif %}>{{ c.name }}</option>{% endfor %}
+    </select>
+  </div>
+  <div class="col-md-3 d-flex gap-2">
+    <button class="btn btn-outline-primary flex-fill" type="submit">Search</button>
+    <a class="btn btn-outline-secondary" href="{{ url_for('main.students') }}">Reset</a>
+  </div>
+</form>
+
+<div class="card">
+  <div class="table-responsive">
+    <table class="table table-hover align-middle mb-0">
+      <thead><tr><th>Roll No</th><th>Name</th><th>Email</th><th>Class</th><th class="text-end">Attendance</th><th class="text-end">Actions</th></tr></thead>
+      <tbody>
+      {% for s in students %}
+        <tr>
+          <td class="fw-semibold">{{ s.roll_no }}</td>
+          <td>{{ s.name }}</td>
+          <td>{{ s.email or '-' }}</td>
+          <td>{{ s.class_name }}</td>
+          <td class="text-end">
+            {% if s.total %}<span class="badge text-bg-{{ s.percentage|pct_class }}">{{ "%.1f"|format(s.percentage) }}%</span>{% else %}<span class="text-muted">No records</span>{% endif %}
+          </td>
+          <td class="text-end text-nowrap">
+            <button type="button" class="btn btn-sm btn-outline-primary" data-bs-toggle="modal" data-bs-target="#editStudentModal"
+                    data-action="{{ url_for('main.edit_student', student_id=s.id) }}"
+                    data-roll_no="{{ s.roll_no }}" data-name="{{ s.name }}" data-email="{{ s.email or '' }}" data-class_id="{{ s.class_id }}">Edit</button>
+            <form method="post" action="{{ url_for('main.delete_student', student_id=s.id) }}" class="d-inline"
+                  data-confirm="Delete {{ s.name }}? All of this student's attendance records will also be deleted.">
+              <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+              <button type="submit" class="btn btn-sm btn-outline-danger">Delete</button>
+            </form>
+          </td>
+        </tr>
+      {% else %}
+        <tr><td colspan="6" class="text-center text-muted py-5">No students found.</td></tr>
+      {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  <div class="card-footer text-muted small">{{ students|length }} student(s)</div>
+</div>
+
+{% macro student_fields(prefix) %}
+  <div class="mb-3"><label class="form-label" for="{{ prefix }}_roll_no">Roll number</label>
+    <input class="form-control" id="{{ prefix }}_roll_no" name="roll_no" maxlength="30" required data-field="roll_no"></div>
+  <div class="mb-3"><label class="form-label" for="{{ prefix }}_name">Full name</label>
+    <input class="form-control" id="{{ prefix }}_name" name="name" maxlength="100" required data-field="name"></div>
+  <div class="mb-3"><label class="form-label" for="{{ prefix }}_email">Email (optional)</label>
+    <input class="form-control" type="email" id="{{ prefix }}_email" name="email" maxlength="120" data-field="email"></div>
+  <div class="mb-3"><label class="form-label" for="{{ prefix }}_class">Class</label>
+    <select class="form-select" id="{{ prefix }}_class" name="class_id" required data-field="class_id">
+      {% for c in classes %}<option value="{{ c.id }}">{{ c.name }}</option>{% endfor %}
+    </select></div>
+{% endmacro %}
+
+<div class="modal fade" id="addStudentModal" tabindex="-1" aria-labelledby="addStudentTitle" aria-hidden="true">
+  <div class="modal-dialog"><form class="modal-content" method="post" action="{{ url_for('main.add_student') }}">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+    <div class="modal-header"><h2 class="modal-title h5" id="addStudentTitle">Add student</h2>
+      <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button></div>
+    <div class="modal-body">{{ student_fields('add') }}</div>
+    <div class="modal-footer"><button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+      <button type="submit" class="btn btn-primary">Add student</button></div>
+  </form></div>
+</div>
+
+<div class="modal fade" id="editStudentModal" tabindex="-1" aria-labelledby="editStudentTitle" aria-hidden="true">
+  <div class="modal-dialog"><form class="modal-content" method="post" action="{{ url_for('main.students') }}" data-edit-form>
+    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+    <div class="modal-header"><h2 class="modal-title h5" id="editStudentTitle">Edit student</h2>
+      <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button></div>
+    <div class="modal-body">{{ student_fields('edit') }}</div>
+    <div class="modal-footer"><button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+      <button type="submit" class="btn btn-primary">Save changes</button></div>
+  </form></div>
+</div>
+{% endblock %}

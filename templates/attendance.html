@@ -1,0 +1,139 @@
+{% extends "base.html" %}
+{% block title %}{% if mode == 'mark' %}Mark Attendance{% else %}Attendance History{% endif %}{% endblock %}
+{% block content %}
+
+{% if mode == 'mark' %}
+<h1 class="h3 mb-3">Mark attendance</h1>
+
+{% if not classes or not subjects %}
+<div class="alert alert-warning">Add at least one class and one subject on the
+  <a class="alert-link" href="{{ url_for('main.subjects') }}">Subjects &amp; Classes</a> page first.</div>
+{% else %}
+<form method="get" action="{{ url_for('main.attendance') }}" class="card card-body mb-3">
+  <div class="row g-2 align-items-end">
+    <div class="col-md-3"><label class="form-label" for="date">Date</label>
+      <input type="date" class="form-control" id="date" name="date" value="{{ selected_date }}" max="{{ today_iso }}" required></div>
+    <div class="col-md-3"><label class="form-label" for="class_id">Class</label>
+      <select class="form-select" id="class_id" name="class_id">
+        {% for c in classes %}<option value="{{ c.id }}" {% if c.id == class_id %}selected{% endif %}>{{ c.name }}</option>{% endfor %}
+      </select></div>
+    <div class="col-md-4"><label class="form-label" for="subject_id">Subject</label>
+      <select class="form-select" id="subject_id" name="subject_id">
+        {% for s in subjects %}<option value="{{ s.id }}" {% if s.id == subject_id %}selected{% endif %}>{{ s.name }} ({{ s.code }})</option>{% endfor %}
+      </select></div>
+    <div class="col-md-2"><button class="btn btn-outline-primary w-100" type="submit">Load students</button></div>
+  </div>
+</form>
+
+{% if students %}
+<form method="post" action="{{ url_for('main.save_attendance') }}" id="attendanceForm">
+  <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+  <input type="hidden" name="date" value="{{ selected_date }}">
+  <input type="hidden" name="class_id" value="{{ class_id }}">
+  <input type="hidden" name="subject_id" value="{{ subject_id }}">
+  <div class="card">
+    <div class="card-header d-flex flex-wrap justify-content-between align-items-center gap-2">
+      <span class="fw-semibold">{{ students|length }} student(s) &middot; {{ selected_date }}
+        {% if existing %}<span class="badge text-bg-info ms-1">Previously saved: edits will update it</span>{% endif %}</span>
+      <span class="d-flex flex-wrap gap-2 align-items-center">
+        <span class="small text-muted">Mark all:</span>
+        <button type="button" class="btn btn-sm btn-outline-success" data-mark-all="Present">Present</button>
+        <button type="button" class="btn btn-sm btn-outline-danger" data-mark-all="Absent">Absent</button>
+        <button type="button" class="btn btn-sm btn-outline-warning" data-mark-all="Late">Late</button>
+      </span>
+    </div>
+    <div class="table-responsive">
+      <table class="table align-middle mb-0">
+        <thead><tr><th>Roll No</th><th>Name</th><th class="text-end">Status</th></tr></thead>
+        <tbody>
+        {% for s in students %}
+          {% set current = existing.get(s.id, 'Present') %}
+          <tr>
+            <td class="fw-semibold">{{ s.roll_no }}</td><td>{{ s.name }}</td>
+            <td class="text-end text-nowrap">
+              <div class="btn-group" role="group" aria-label="Status for {{ s.name }}">
+                {% for st, cls in [('Present', 'success'), ('Absent', 'danger'), ('Late', 'warning')] %}
+                <input type="radio" class="btn-check status-radio" name="status_{{ s.id }}" id="s{{ s.id }}_{{ st }}" value="{{ st }}" autocomplete="off" {% if current == st %}checked{% endif %}>
+                <label class="btn btn-sm btn-outline-{{ cls }}" for="s{{ s.id }}_{{ st }}">{{ st }}</label>
+                {% endfor %}
+              </div>
+            </td>
+          </tr>
+        {% endfor %}
+        </tbody>
+      </table>
+    </div>
+    <div class="card-footer d-flex flex-wrap justify-content-between align-items-center gap-2">
+      <span class="small text-muted" id="statusCounter"></span>
+      <button type="submit" class="btn btn-primary">Save attendance</button>
+    </div>
+  </div>
+</form>
+{% else %}
+<div class="alert alert-info">No students in this class yet. <a class="alert-link" href="{{ url_for('main.students') }}">Add students</a>.</div>
+{% endif %}
+{% endif %}
+
+{% else %}
+<div class="d-flex flex-wrap justify-content-between align-items-center mb-3">
+  <h1 class="h3 mb-0">Attendance history</h1>
+  <span class="text-muted">{{ total }} record(s)</span>
+</div>
+
+<form method="get" action="{{ url_for('main.attendance_history') }}" class="card card-body mb-3">
+  <div class="row g-2 align-items-end">
+    <div class="col-md-3"><label class="form-label" for="student_id">Student</label>
+      <select class="form-select" id="student_id" name="student_id"><option value="">All students</option>
+        {% for s in all_students %}<option value="{{ s.id }}" {% if filters.student_id == s.id %}selected{% endif %}>{{ s.name }} ({{ s.roll_no }})</option>{% endfor %}
+      </select></div>
+    <div class="col-md-2"><label class="form-label" for="class_id">Class</label>
+      <select class="form-select" id="class_id" name="class_id"><option value="">All</option>
+        {% for c in classes %}<option value="{{ c.id }}" {% if filters.class_id == c.id %}selected{% endif %}>{{ c.name }}</option>{% endfor %}
+      </select></div>
+    <div class="col-md-2"><label class="form-label" for="subject_id">Subject</label>
+      <select class="form-select" id="subject_id" name="subject_id"><option value="">All</option>
+        {% for s in subjects %}<option value="{{ s.id }}" {% if filters.subject_id == s.id %}selected{% endif %}>{{ s.name }}</option>{% endfor %}
+      </select></div>
+    <div class="col-md-2"><label class="form-label" for="date_from">From</label>
+      <input type="date" class="form-control" id="date_from" name="date_from" value="{{ filters.date_from }}"></div>
+    <div class="col-md-2"><label class="form-label" for="date_to">To</label>
+      <input type="date" class="form-control" id="date_to" name="date_to" value="{{ filters.date_to }}"></div>
+    <div class="col-md-1"><button class="btn btn-primary w-100" type="submit">Go</button></div>
+  </div>
+</form>
+
+<div class="card">
+  <div class="table-responsive">
+    <table class="table table-hover align-middle mb-0">
+      <thead><tr><th>Date</th><th>Roll No</th><th>Student</th><th>Class</th><th>Subject</th><th>Status</th><th class="text-end">Action</th></tr></thead>
+      <tbody>
+      {% for r in records %}
+        <tr>
+          <td>{{ r.attendance_date }}</td><td>{{ r.roll_no }}</td><td>{{ r.student_name }}</td><td>{{ r.class_name }}</td><td>{{ r.subject_name }}</td>
+          <td><span class="badge text-bg-{{ {'Present': 'success', 'Absent': 'danger', 'Late': 'warning'}[r.status] }}">{{ r.status }}</span></td>
+          <td class="text-end">
+            <form method="post" action="{{ url_for('main.delete_attendance', record_id=r.id) }}" class="d-inline"
+                  data-confirm="Delete this attendance record?">
+              <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+              <button type="submit" class="btn btn-sm btn-outline-danger">Delete</button>
+            </form>
+          </td>
+        </tr>
+      {% else %}
+        <tr><td colspan="7" class="text-center text-muted py-5">No attendance records match these filters.</td></tr>
+      {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  {% if pages > 1 %}
+  <div class="card-footer d-flex justify-content-between align-items-center">
+    <span class="small text-muted">Page {{ page }} of {{ pages }}</span>
+    <div class="btn-group">
+      {% if page > 1 %}<a class="btn btn-sm btn-outline-secondary" href="{{ url_for('main.attendance_history', page=page - 1, **query_args) }}">Previous</a>{% endif %}
+      {% if page < pages %}<a class="btn btn-sm btn-outline-secondary" href="{{ url_for('main.attendance_history', page=page + 1, **query_args) }}">Next</a>{% endif %}
+    </div>
+  </div>
+  {% endif %}
+</div>
+{% endif %}
+{% endblock %}

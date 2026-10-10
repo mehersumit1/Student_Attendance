@@ -1,0 +1,89 @@
+{% extends "base.html" %}
+{% block title %}Reports{% endblock %}
+{% block content %}
+<div class="d-flex flex-wrap justify-content-between align-items-center mb-3 gap-2">
+  <h1 class="h3 mb-0">Attendance reports</h1>
+  <div class="btn-group">
+    <a class="btn btn-outline-success" href="{{ url_for('main.export_csv', kind='records', **query_args) }}">Export records (CSV)</a>
+    <a class="btn btn-outline-success" href="{{ url_for('main.export_csv', kind='summary', **query_args) }}">Export summary (CSV)</a>
+  </div>
+</div>
+
+<form method="get" action="{{ url_for('main.reports') }}" class="card card-body mb-3">
+  <div class="row g-2 align-items-end">
+    <div class="col-md-3"><label class="form-label" for="student_id">Student</label>
+      <select class="form-select" id="student_id" name="student_id"><option value="">All students</option>
+        {% for s in all_students %}<option value="{{ s.id }}" {% if filters.student_id == s.id %}selected{% endif %}>{{ s.name }} ({{ s.roll_no }})</option>{% endfor %}
+      </select></div>
+    <div class="col-md-2"><label class="form-label" for="class_id">Class</label>
+      <select class="form-select" id="class_id" name="class_id"><option value="">All</option>
+        {% for c in classes %}<option value="{{ c.id }}" {% if filters.class_id == c.id %}selected{% endif %}>{{ c.name }}</option>{% endfor %}
+      </select></div>
+    <div class="col-md-2"><label class="form-label" for="subject_id">Subject</label>
+      <select class="form-select" id="subject_id" name="subject_id"><option value="">All</option>
+        {% for s in subjects %}<option value="{{ s.id }}" {% if filters.subject_id == s.id %}selected{% endif %}>{{ s.name }}</option>{% endfor %}
+      </select></div>
+    <div class="col-md-2"><label class="form-label" for="date_from">From</label>
+      <input type="date" class="form-control" id="date_from" name="date_from" value="{{ filters.date_from }}"></div>
+    <div class="col-md-2"><label class="form-label" for="date_to">To</label>
+      <input type="date" class="form-control" id="date_to" name="date_to" value="{{ filters.date_to }}"></div>
+    <div class="col-md-1"><button class="btn btn-primary w-100" type="submit">Go</button></div>
+  </div>
+</form>
+
+<div class="row g-3 mb-3">
+  <div class="col-6 col-lg-3"><div class="card stat-card"><div class="card-body"><div class="stat-label">Records</div><div class="stat-value">{{ totals.total }}</div></div></div></div>
+  <div class="col-6 col-lg-3"><div class="card stat-card"><div class="card-body"><div class="stat-label">Present / Late</div><div class="stat-value text-success">{{ totals.present }} / {{ totals.late }}</div></div></div></div>
+  <div class="col-6 col-lg-3"><div class="card stat-card"><div class="card-body"><div class="stat-label">Absent</div><div class="stat-value text-danger">{{ totals.absent }}</div></div></div></div>
+  <div class="col-6 col-lg-3"><div class="card stat-card"><div class="card-body"><div class="stat-label">Attendance</div><div class="stat-value text-{{ totals.percentage|pct_class }}">{{ "%.1f"|format(totals.percentage) }}%</div></div></div></div>
+</div>
+
+<div class="row g-3">
+  <div class="col-lg-7">
+    <div class="card h-100"><div class="card-header fw-semibold">By student</div>
+      <div class="table-responsive"><table class="table table-hover align-middle mb-0">
+        <thead><tr><th>Roll No</th><th>Student</th><th>Class</th><th class="text-end">P</th><th class="text-end">L</th><th class="text-end">A</th><th class="text-end">%</th></tr></thead>
+        <tbody>
+        {% for r in by_student %}
+          <tr><td>{{ r.roll_no }}</td><td>{{ r.name }}</td><td>{{ r.class_name }}</td>
+            <td class="text-end">{{ r.present }}</td><td class="text-end">{{ r.late }}</td><td class="text-end">{{ r.absent }}</td>
+            <td class="text-end"><span class="badge text-bg-{{ r.percentage|pct_class }}">{{ "%.1f"|format(r.percentage) }}%</span></td></tr>
+        {% else %}
+          <tr><td colspan="7" class="text-center text-muted py-4">No data for these filters.</td></tr>
+        {% endfor %}
+        </tbody></table></div>
+    </div>
+  </div>
+  <div class="col-lg-5">
+    <div class="card h-100"><div class="card-header fw-semibold">By subject</div>
+      <div class="table-responsive"><table class="table table-hover align-middle mb-0">
+        <thead><tr><th>Subject</th><th class="text-end">P</th><th class="text-end">L</th><th class="text-end">A</th><th class="text-end">%</th></tr></thead>
+        <tbody>
+        {% for r in by_subject %}
+          <tr><td>{{ r.name }}</td><td class="text-end">{{ r.present }}</td><td class="text-end">{{ r.late }}</td><td class="text-end">{{ r.absent }}</td>
+            <td class="text-end"><span class="badge text-bg-{{ r.percentage|pct_class }}">{{ "%.1f"|format(r.percentage) }}%</span></td></tr>
+        {% else %}
+          <tr><td colspan="5" class="text-center text-muted py-4">No data for these filters.</td></tr>
+        {% endfor %}
+        </tbody></table></div>
+    </div>
+  </div>
+  <div class="col-12">
+    <div class="card"><div class="card-header fw-semibold">Records by date</div>
+      <div class="table-responsive"><table class="table table-hover align-middle mb-0">
+        <thead><tr><th>Date</th><th>Roll No</th><th>Student</th><th>Class</th><th>Subject</th><th>Status</th></tr></thead>
+        <tbody>
+        {% for r in records %}
+          <tr><td>{{ r.attendance_date }}</td><td>{{ r.roll_no }}</td><td>{{ r.student_name }}</td><td>{{ r.class_name }}</td><td>{{ r.subject_name }}</td>
+            <td><span class="badge text-bg-{{ {'Present': 'success', 'Absent': 'danger', 'Late': 'warning'}[r.status] }}">{{ r.status }}</span></td></tr>
+        {% else %}
+          <tr><td colspan="6" class="text-center text-muted py-4">No attendance records match these filters.</td></tr>
+        {% endfor %}
+        </tbody></table></div>
+      {% if totals.total > record_limit %}
+      <div class="card-footer text-muted small">Showing the latest {{ record_limit }} of {{ totals.total }} records. Export CSV to get them all.</div>
+      {% endif %}
+    </div>
+  </div>
+</div>
+{% endblock %}

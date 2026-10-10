@@ -1,0 +1,40 @@
+:root {
+  --app-primary: #3b5bdb;
+  --app-primary-dark: #2b44a8;
+  --app-bg: #f4f6fb;
+}
+body.app-body { background: var(--app-bg); min-height: 100vh; }
+.app-navbar { background: linear-gradient(90deg, var(--app-primary-dark), var(--app-primary)); }
+.app-navbar .nav-link.active { font-weight: 600; color: #fff; border-bottom: 2px solid #fff; }
+.btn-primary { --bs-btn-bg: var(--app-primary); --bs-btn-border-color: var(--app-primary);
+  --bs-btn-hover-bg: var(--app-primary-dark); --bs-btn-hover-border-color: var(--app-primary-dark); }
+.card { border: 0; box-shadow: 0 1px 3px rgba(20, 30, 70, 0.08); border-radius: 0.75rem; }
+.card-header { background: #fff; border-bottom: 1px solid #eef0f6; border-radius: 0.75rem 0.75rem 0 0 !important; }
+.table > :not(caption) > * > * { padding: 0.7rem 0.9rem; }
+.table thead th { font-size: 0.78rem; text-transform: uppercase; letter-spacing: 0.04em; color: #6b7390; background: #fafbfe; }
+
+.stat-card .stat-label { font-size: 0.8rem; text-transform: uppercase; letter-spacing: 0.05em; color: #6b7390; }
+.stat-card .stat-value { font-size: 2rem; font-weight: 700; line-height: 1.2; }
+.stat-card .stat-note { font-size: 0.78rem; color: #8a91a8; }
+.border-success-accent { border-left: 4px solid #198754 !important; }
+.border-danger-accent { border-left: 4px solid #dc3545 !important; }
+
+.progress { height: 0.6rem; }
+
+.trend { display: flex; align-items: flex-end; gap: 0.5rem; height: 190px; }
+.trend-col { flex: 1; text-align: center; font-size: 0.72rem; }
+.trend-bar-wrap { height: 130px; display: flex; align-items: flex-end; background: #f1f3fa; border-radius: 0.4rem; overflow: hidden; }
+.trend-bar { width: 100%; border-radius: 0.4rem 0.4rem 0 0; min-height: 2px; }
+.trend-pct { margin-top: 0.3rem; font-weight: 600; }
+.trend-day { color: #8a91a8; }
+
+body.login-page { min-height: 100vh; display: flex; align-items: center;
+  background: linear-gradient(135deg, #2b44a8 0%, #3b5bdb 55%, #5c7cfa 100%); }
+body.login-page main { width: 100%; }
+.login-icon { font-size: 3rem; line-height: 1; }
+
+.status-radio + .btn { min-width: 4.8rem; }
+@media (max-width: 575.98px) {
+  .stat-card .stat-value { font-size: 1.6rem; }
+  .status-radio + .btn { min-width: 0; padding-left: 0.5rem; padding-right: 0.5rem; }
+}
